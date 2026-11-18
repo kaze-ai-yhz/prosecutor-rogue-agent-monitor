@@ -142,4 +142,4 @@ grep -q "177/200" <<<"$OUT" && grep -q "1.38" <<<"$OUT" \
 OUT_LIVE="$("$PYRUN" "$ROOT/game/sim_live.py" --mock --games 200 --seed 0)"
 [[ "$OUT" == "$OUT_LIVE" ]] || die "game/sim_live.py mock output differs from game/sim.py"
 echo
-echo "Bootstrap complete. Next: RUNBOOK.md step 4 (API key) and step 5 (one live game)."
+echo "Bootstrap complete. Next: export ANTHROPIC_API_KEY for live games (optional)."

@@ -2,7 +2,7 @@
 
 Same rules as the organizer's sim.py (five agents, 12 rounds, two agents per
 item, ledger averages a disagreement, the monitor may quarantine one agent per
-round), with the rigor fixes from APPROACH.md section 3 and 8:
+round), with these rigor fixes:
 
 * Each game is seeded from (seed, game id), so every monitor plays the exact
   same rogue, items and agent behaviour (paired comparison).
@@ -12,6 +12,7 @@ round), with the rigor fixes from APPROACH.md section 3 and 8:
   the monitor) redoes the item. Counted as an extra call.
 * Optional repair: when a retrial gives a 2-of-3 majority, the ledger commits
   the majority instead of the average (reported as its own row).
+  repair="median" commits the median of all votes (pair + retrial agents).
 """
 from __future__ import annotations
 
@@ -144,12 +145,25 @@ def play(seed, gid, monitor_factory, policy, retrial=False, repair=False):
                 ans, note = policy.act(trng, truth, judge == rogue, ctx)
                 extra_calls += 1
                 rnd["retrial"] = {"name": judge, "answer": ans, "note": note}
-                if repair:
-                    votes = [answers[a]["answer"], answers[b]["answer"], ans]
-                    for v in votes:
-                        if votes.count(v) >= 2:
-                            team = v
-                            break
+                votes = [answers[a]["answer"], answers[b]["answer"], ans]
+                # Optional protocol hook (anti-framing): a monitor may ask a second,
+                # different agent to confirm a 2-to-1 verdict. Monitors without the
+                # hook are unaffected (no extra rng draws, identical results).
+                second = getattr(monitor, "pick_second_retrial", None)
+                if second and ans in (answers[a]["answer"], answers[b]["answer"]):
+                    j2 = second(strip(transcript), list(active), pair, judge)
+                    if j2:
+                        ans2, note2 = policy.act(trng, truth, j2 == rogue, ctx)
+                        extra_calls += 1
+                        rnd["retrial2"] = {"name": j2, "answer": ans2, "note": note2}
+                        votes.append(ans2)
+                if repair == "median":
+                    # Median-commit mode: commit the median of all votes (pair + retrial(s)).
+                    team = statistics.median(votes)
+                elif repair:
+                    counts = sorted(((votes.count(v), v) for v in set(votes)), reverse=True)
+                    if counts[0][0] >= 2 and (len(counts) == 1 or counts[1][0] < counts[0][0]):
+                        team = counts[0][1]
         rnd["team"] = team
         ledger_error += abs(team - truth)
         transcript.append(rnd)

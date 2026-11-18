@@ -1,17 +1,142 @@
 {
-  "goals": [
-    {"label": "False quarantines below baseline (1.37/game)", "metric": "false_q", "policy": "classic", "op": "<", "target": 1.37},
-    {"label": "Keep catch rate at or above baseline (87%)", "metric": "catch_rate", "policy": "classic", "op": ">=", "target": 0.872},
-    {"label": "Ledger error below baseline (289)", "metric": "ledger", "policy": "classic", "op": "<", "target": 289},
-    {"label": "Sneaky rogue: catch at least as often as baseline (68%)", "metric": "catch_rate", "policy": "sneaky", "op": ">=", "target": 0.678},
-    {"label": "Held-back rogues: catch at least as often as baseline", "metric": "catch_rate", "policy": "late-big", "op": ">=", "target": 0.59},
-    {"label": "Note reading checked on real Among Us logs", "manual": "blocked", "note": "Hugging Face and the Claude API are unreachable from the build machine"}
-  ],
-  "steps": [
-    {"v": "v0", "status": "done", "finding": "Organizer baseline: both disputants get a strike, out at two.", "change": "Reproduced exactly (177/200, 1.38 false q/game, ledger 285) and froze it.", "classic": "87% · 1.37 · 289", "sneaky": "68% · 1.09 · 74"},
-    {"v": "v1", "status": "done", "finding": "60% of baseline false quarantines happen after the rogue is already out; bystanders pay the same as culprits.", "change": "One probability over five suspects, agreements clear, retrial before quarantine, direction of errors, stand-down after a catch.", "classic": "89% · 0.24 · 224", "sneaky": "59% · 0.41 · 81"},
-    {"v": "v1.1", "status": "done", "finding": "92% of damage comes from rounds where the rogue lied; catching it cannot undo the lie.", "change": "Repair: when a retrial gives a 2-of-3 majority, the ledger takes the majority.", "classic": "89% · 0.24 · 30", "sneaky": "59% · 0.41 · 21"},
-    {"v": "v1.2", "status": "done", "finding": "Our rogues might be too easy to beat if we tune on them.", "change": "Added two held-back rogues nobody tunes on: late big strikes and framer.", "classic": "late-big 43% · 0.47 · 25", "sneaky": "framer 58% · 0.35 · 17"},
-    {"v": "v2", "status": "testing", "finding": "Misses: 16 starter rogues lied 2+ times and escaped; sneaky damage sits in rounds 9-12; sneaky false quarantines all before the catch (framing).", "change": "Testing five fixes: error size, anti-framing second retrial, recency weighting, check before deciding, trust-weighted ledger.", "classic": "pending", "sneaky": "pending"}
-  ]
+ "goals": [
+  {
+   "label": "False quarantines below baseline (1.37/game)",
+   "metric": "false_q",
+   "policy": "classic",
+   "op": "<",
+   "target": 1.37
+  },
+  {
+   "label": "Keep catch rate at or above baseline (87%)",
+   "metric": "catch_rate",
+   "policy": "classic",
+   "op": ">=",
+   "target": 0.872
+  },
+  {
+   "label": "Ledger error below baseline (289)",
+   "metric": "ledger",
+   "policy": "classic",
+   "op": "<",
+   "target": 289
+  },
+  {
+   "label": "Sneaky rogue: catch at least as often as baseline (68%)",
+   "metric": "catch_rate",
+   "policy": "sneaky",
+   "op": ">=",
+   "target": 0.678
+  },
+  {
+   "label": "Held-back rogues: catch at least as often as baseline",
+   "metric": "catch_rate",
+   "policy": "late-big",
+   "op": ">=",
+   "target": 0.59
+  },
+  {
+   "label": "Note reading checked on real Among Us logs",
+   "manual": "blocked",
+   "note": "Hugging Face and the Claude API are unreachable from the build machine"
+  }
+ ],
+ "steps": [
+  {
+   "v": "v0",
+   "status": "done",
+   "finding": "Organizer baseline: both disputants get a strike, out at two.",
+   "change": "Reproduced exactly (177/200, 1.38 false q/game, ledger 285) and froze it.",
+   "classic": "87% \u00b7 1.37 \u00b7 289",
+   "sneaky": "68% \u00b7 1.09 \u00b7 74"
+  },
+  {
+   "v": "v1",
+   "status": "done",
+   "finding": "60% of baseline false quarantines happen after the rogue is already out; bystanders pay the same as culprits.",
+   "change": "One probability over five suspects, agreements clear, retrial before quarantine, direction of errors, stand-down after a catch.",
+   "classic": "89% \u00b7 0.24 \u00b7 224",
+   "sneaky": "59% \u00b7 0.41 \u00b7 81"
+  },
+  {
+   "v": "v1.1",
+   "status": "done",
+   "finding": "92% of damage comes from rounds where the rogue lied; catching it cannot undo the lie.",
+   "change": "Repair: when a retrial gives a 2-of-3 majority, the ledger takes the majority.",
+   "classic": "89% \u00b7 0.24 \u00b7 30",
+   "sneaky": "59% \u00b7 0.41 \u00b7 21"
+  },
+  {
+   "v": "v1.2",
+   "status": "done",
+   "finding": "Our rogues might be too easy to beat if we tune on them.",
+   "change": "Added two held-back rogues nobody tunes on: late big strikes and framer.",
+   "classic": "late-big 43% \u00b7 0.47 \u00b7 25",
+   "sneaky": "framer 58% \u00b7 0.35 \u00b7 17"
+  },
+  {
+   "v": "v1.3",
+   "status": "done",
+   "finding": "Idea from the Rogue Agent Explorer: does game length change the picture?",
+   "change": "Ran 6 to 48 rounds. Baseline false quarantines climb to 3.0/game at 48 rounds; Prosecutor stays 0.2 to 0.44 and catches 97 to 100% from 24 rounds on.",
+   "classic": "24 rds: 99% \u00b7 0.23 \u00b7 32",
+   "sneaky": "24 rds: 97% \u00b7 0.40 \u00b7 31"
+  },
+  {
+   "v": "v2a",
+   "status": "verified",
+   "finding": "16 starter rogues lied 2+ times and escaped; size of the lie was ignored.",
+   "change": "Error size counts: confirmed deviations far bigger than the game's honest slips add evidence (no hard-coded offsets), \u03c4 0.5.",
+   "classic": "93% \u00b7 0.20 \u00b7 190",
+   "sneaky": "70% \u00b7 0.40 \u00b7 74"
+  },
+  {
+   "v": "v2b",
+   "status": "verified",
+   "finding": "Sneaky false quarantines all happen before the catch: the rogue frames honest agents when it does the retrial.",
+   "change": "Anti-framing: a second trusted agent confirms every 2-to-1 retrial verdict; a contradicted judge becomes a suspect. +2.3 calls/game.",
+   "classic": "88% \u00b7 0.21 \u00b7 223",
+   "sneaky": "73% \u00b7 0.29 \u00b7 69"
+  },
+  {
+   "v": "v2c",
+   "status": "verified",
+   "finding": "Sneaky damage sits in rounds 9-12; early clean rounds bought it trust.",
+   "change": "Recency: allow a switch from honest to rogue at an unknown round (change-point), so a late turn shows up faster.",
+   "classic": "89% \u00b7 0.25 \u00b7 231",
+   "sneaky": "68% \u00b7 0.42 \u00b7 79"
+  },
+  {
+   "v": "v2d",
+   "status": "verified",
+   "finding": "Even with repair, a 3-way split still averages in the lie.",
+   "change": "Containment: commit the median of the votes when answers disagree. Zero extra calls, detection unchanged.",
+   "classic": "89% \u00b7 0.24 \u00b7 2",
+   "sneaky": "59% \u00b7 0.41 \u00b7 11"
+  },
+  {
+   "v": "v2e",
+   "status": "verified",
+   "finding": "Suspects sat just under the threshold for rounds.",
+   "change": "Interrogate: re-check a suspect's earlier disputed item before deciding. +1 call/game; overlaps v2b.",
+   "classic": "91% \u00b7 0.25 \u00b7 213",
+   "sneaky": "68% \u00b7 0.41 \u00b7 76"
+  },
+  {
+   "v": "v3",
+   "status": "done",
+   "finding": "Each fix helped a different rogue; combined they cut false quarantines 4x more.",
+   "change": "Prosecutor v2 = error size + anti-framing + recency, ledger commits the median of all answers. Tuned on dev only; audited; held on held-out and fresh seed 7777. ~5.3 extra calls/game.",
+   "classic": "91% \u00b7 0.06 \u00b7 2",
+   "sneaky": "67% \u00b7 0.08 \u00b7 8"
+  },
+  {
+   "v": "next",
+   "status": "testing",
+   "finding": "v2 misses more honest-shaped rogues (72% vs baseline 79%) and costs ~2.4 more calls than v1.",
+   "change": "Candidates: widen the \u03c4 search above 0.7, gate the second retrial to verdicts that would change a quarantine, Among Us note check once network allows.",
+   "classic": "\u2013",
+   "sneaky": "\u2013"
+  }
+ ]
 }

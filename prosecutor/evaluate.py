@@ -14,7 +14,7 @@ import json
 import os
 
 from .harness import POLICIES, play, summarize
-from .monitor import Baseline, Prosecutor
+from .monitor import Baseline, Prosecutor, ProsecutorV2
 
 DEV_SEED, HELDOUT_SEED = 1000, 2026
 
@@ -25,6 +25,8 @@ def configs(tau):
         "Prosecutor (no retrial)": (lambda: Prosecutor(tau=tau, use_retrial=False), False, False),
         "Prosecutor": (lambda: Prosecutor(tau=tau), True, False),
         "Prosecutor + repair": (lambda: Prosecutor(tau=tau), True, True),
+        # v2 keeps its own dev-tuned tau (0.7, seed 1000) and commits the median of votes.
+        "Prosecutor v2": (lambda: ProsecutorV2(), True, "median"),
     }
 
 
