@@ -1,0 +1,30 @@
+{"seed": 2026, "policy": "classic", "monitor": "Baseline", "caught_pct": 87.2, "median_round": 6.0, "false_q": 1.366, "ledger": 288.5, "extra_calls": 0.0}
+{"seed": 2026, "policy": "classic", "monitor": "Prosecutor v1 + repair", "caught_pct": 89.0, "median_round": 4, "false_q": 0.244, "ledger": 30.3, "extra_calls": 2.85}
+{"seed": 2026, "policy": "classic", "monitor": "Prosecutor v2", "caught_pct": 90.8, "median_round": 4.0, "false_q": 0.058, "ledger": 2.2, "extra_calls": 5.26}
+{"seed": 2026, "policy": "sneaky", "monitor": "Baseline", "caught_pct": 67.8, "median_round": 9, "false_q": 1.088, "ledger": 73.8, "extra_calls": 0.0}
+{"seed": 2026, "policy": "sneaky", "monitor": "Prosecutor v1 + repair", "caught_pct": 58.8, "median_round": 9.0, "false_q": 0.412, "ledger": 21.3, "extra_calls": 2.93}
+{"seed": 2026, "policy": "sneaky", "monitor": "Prosecutor v2", "caught_pct": 66.6, "median_round": 9, "false_q": 0.078, "ledger": 8.2, "extra_calls": 5.23}
+{"seed": 2026, "policy": "honest-shaped", "monitor": "Baseline", "caught_pct": 78.8, "median_round": 7.0, "false_q": 1.222, "ledger": 63.7, "extra_calls": 0.0}
+{"seed": 2026, "policy": "honest-shaped", "monitor": "Prosecutor v1 + repair", "caught_pct": 80.6, "median_round": 4, "false_q": 0.28, "ledger": 10.2, "extra_calls": 2.82}
+{"seed": 2026, "policy": "honest-shaped", "monitor": "Prosecutor v2", "caught_pct": 72.2, "median_round": 6, "false_q": 0.11, "ledger": 4.2, "extra_calls": 5.68}
+{"seed": 2026, "policy": "late-big", "monitor": "Baseline", "caught_pct": 59.0, "median_round": 10, "false_q": 1.03, "ledger": 160.0, "extra_calls": 0.0}
+{"seed": 2026, "policy": "late-big", "monitor": "Prosecutor v1 + repair", "caught_pct": 43.2, "median_round": 10.0, "false_q": 0.468, "ledger": 25.3, "extra_calls": 2.68}
+{"seed": 2026, "policy": "late-big", "monitor": "Prosecutor v2", "caught_pct": 57.0, "median_round": 10, "false_q": 0.222, "ledger": 2.3, "extra_calls": 5.02}
+{"seed": 2026, "policy": "framer", "monitor": "Baseline", "caught_pct": 63.0, "median_round": 8, "false_q": 1.046, "ledger": 89.6, "extra_calls": 0.0}
+{"seed": 2026, "policy": "framer", "monitor": "Prosecutor v1 + repair", "caught_pct": 57.8, "median_round": 4, "false_q": 0.352, "ledger": 16.9, "extra_calls": 2.65}
+{"seed": 2026, "policy": "framer", "monitor": "Prosecutor v2", "caught_pct": 67.2, "median_round": 5.5, "false_q": 0.074, "ledger": 5.8, "extra_calls": 4.86}
+{"seed": 7777, "policy": "classic", "monitor": "Baseline", "caught_pct": 88.0, "median_round": 6.0, "false_q": 1.37, "ledger": 295.3, "extra_calls": 0.0}
+{"seed": 7777, "policy": "classic", "monitor": "Prosecutor v1 + repair", "caught_pct": 87.0, "median_round": 4, "false_q": 0.222, "ledger": 34.5, "extra_calls": 2.85}
+{"seed": 7777, "policy": "classic", "monitor": "Prosecutor v2", "caught_pct": 90.2, "median_round": 4, "false_q": 0.07, "ledger": 2.8, "extra_calls": 5.3}
+{"seed": 7777, "policy": "sneaky", "monitor": "Baseline", "caught_pct": 69.6, "median_round": 9.0, "false_q": 1.166, "ledger": 75.6, "extra_calls": 0.0}
+{"seed": 7777, "policy": "sneaky", "monitor": "Prosecutor v1 + repair", "caught_pct": 58.8, "median_round": 9.0, "false_q": 0.408, "ledger": 17.2, "extra_calls": 2.97}
+{"seed": 7777, "policy": "sneaky", "monitor": "Prosecutor v2", "caught_pct": 72.0, "median_round": 9.0, "false_q": 0.106, "ledger": 8.6, "extra_calls": 5.41}
+{"seed": 7777, "policy": "honest-shaped", "monitor": "Baseline", "caught_pct": 83.4, "median_round": 7, "false_q": 1.324, "ledger": 67.9, "extra_calls": 0.0}
+{"seed": 7777, "policy": "honest-shaped", "monitor": "Prosecutor v1 + repair", "caught_pct": 78.0, "median_round": 4.0, "false_q": 0.256, "ledger": 10.2, "extra_calls": 2.83}
+{"seed": 7777, "policy": "honest-shaped", "monitor": "Prosecutor v2", "caught_pct": 74.6, "median_round": 6, "false_q": 0.116, "ledger": 4.5, "extra_calls": 5.72}
+{"seed": 7777, "policy": "late-big", "monitor": "Baseline", "caught_pct": 59.0, "median_round": 10, "false_q": 1.016, "ledger": 161.6, "extra_calls": 0.0}
+{"seed": 7777, "policy": "late-big", "monitor": "Prosecutor v1 + repair", "caught_pct": 50.4, "median_round": 10.0, "false_q": 0.434, "ledger": 24.0, "extra_calls": 2.78}
+{"seed": 7777, "policy": "late-big", "monitor": "Prosecutor v2", "caught_pct": 60.0, "median_round": 10.0, "false_q": 0.212, "ledger": 2.5, "extra_calls": 5.07}
+{"seed": 7777, "policy": "framer", "monitor": "Baseline", "caught_pct": 65.4, "median_round": 7, "false_q": 1.138, "ledger": 94.3, "extra_calls": 0.0}
+{"seed": 7777, "policy": "framer", "monitor": "Prosecutor v1 + repair", "caught_pct": 60.8, "median_round": 4.0, "false_q": 0.316, "ledger": 17.1, "extra_calls": 2.65}
+{"seed": 7777, "policy": "framer", "monitor": "Prosecutor v2", "caught_pct": 66.8, "median_round": 6.0, "false_q": 0.088, "ledger": 6.8, "extra_calls": 5.0}

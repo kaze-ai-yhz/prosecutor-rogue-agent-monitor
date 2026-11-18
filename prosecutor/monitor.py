@@ -320,3 +320,65 @@ class ProsecutorV2(Prosecutor):
         z = sum(math.exp(v - m) for v in logl.values())
         post = {x: math.exp(logl[x] - m) / z for x in AGENTS}
         return post, conf, {}
+
+
+class ProsecutorV3(ProsecutorV2):
+    """Prosecutor v3: ProsecutorV2 plus the verified v3-late components, each behind a flag.
+
+    late_prior  (cp_gamma > 0) change-point prior over the switch round k proportional
+                to k**cp_gamma instead of uniform (more mass on late trust-then-strike).
+                cp_gamma=0 reproduces v2 exactly.
+    late_tau    decision value: from round late_from on the quarantine threshold drops
+                to late_tau (a retrial-confirmed error is still required). None disables.
+    Reads only the stripped transcript (round count, answers, pair, retrials).
+    """
+
+    def __init__(self, cp_gamma=0.0, late_tau=None, late_from=11, late_prior=True,
+                 late_decision=True, **kw):
+        super().__init__(**kw)
+        self.cp_gamma = cp_gamma if late_prior else 0.0
+        self.late_tau = late_tau if late_decision else None
+        self.late_from = late_from
+        raw = [k ** self.cp_gamma for k in range(1, 12)]
+        s = sum(raw)
+        self._cpw = [self.cp_weight * r / s for r in raw]  # index k-1
+
+    def _rogue_loglik(self, transcript, x):
+        if self.cp_gamma == 0.0:
+            return super()._rogue_loglik(transcript, x)
+        n = len(transcript)
+        use_cp = self.cp_weight > 0 and n >= 2
+        base_pr = self.pr
+        if use_cp:
+            self.pr = self.ph
+            hon = [math.log(max(self._round_lik(rnd, x), 1e-12)) for rnd in transcript]
+        terms = []
+        for pr in self.pr_grid:
+            self.pr = pr
+            rog = [math.log(max(self._round_lik(rnd, x), 1e-12)) for rnd in transcript]
+            full = sum(rog)
+            if use_cp:
+                cps, pre, suf = [], 0.0, full
+                for k in range(1, n + 1):
+                    pre += hon[k - 1]
+                    suf -= rog[k - 1]
+                    cps.append(pre + suf)
+                rest = sum(self._cpw[n - 1:])
+                parts = [math.log(1 - self.cp_weight) + full] + \
+                        [math.log(self._cpw[k - 1]) + cps[k - 1] for k in range(1, n)] + \
+                        [math.log(max(rest, 1e-9)) + cps[-1]]
+                mm = max(parts)
+                full = mm + math.log(sum(math.exp(p - mm) for p in parts))
+            terms.append(full)
+        self.pr = base_pr
+        m0 = max(terms)
+        return m0 + math.log(sum(math.exp(t - m0) for t in terms) / len(terms))
+
+    def __call__(self, transcript, active):
+        base_tau = self.tau
+        if self.late_tau is not None and len(transcript) >= self.late_from:
+            self.tau = min(self.tau, self.late_tau)
+        try:
+            return super().__call__(transcript, active)
+        finally:
+            self.tau = base_tau
