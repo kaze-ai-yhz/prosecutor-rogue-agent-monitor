@@ -123,7 +123,7 @@
    "sneaky": "68% \u00b7 0.41 \u00b7 76"
   },
   {
-   "v": "v3",
+   "v": "v2",
    "status": "done",
    "finding": "Each fix helped a different rogue; combined they cut false quarantines 4x more.",
    "change": "Prosecutor v2 = error size + anti-framing + recency, ledger commits the median of all answers. Tuned on dev only; audited; held on held-out and fresh seed 7777. ~5.3 extra calls/game.",
@@ -131,10 +131,10 @@
    "sneaky": "67% \u00b7 0.08 \u00b7 8"
   },
   {
-   "v": "next",
+   "v": "v3",
    "status": "testing",
-   "finding": "v2 misses more honest-shaped rogues (72% vs baseline 79%) and costs ~2.4 more calls than v1.",
-   "change": "Candidates: widen the \u03c4 search above 0.7, gate the second retrial to verdicts that would change a quarantine, Among Us note check once network allows.",
+   "finding": "v2 misses more honest-shaped rogues (72% vs baseline 79%), only matches the baseline on sneaky and late-big, and costs ~5 calls/game.",
+   "change": "Testing four pushes: wider and round-aware threshold, learned error rates (catch frequent small errors), cheaper gated second judge, late-strike detection.",
    "classic": "\u2013",
    "sneaky": "\u2013"
   }

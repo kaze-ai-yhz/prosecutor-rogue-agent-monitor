@@ -69,6 +69,12 @@ svg#stage{width:100%;height:auto;max-width:100%;display:block}
 .pill.met{background:var(--good)} .pill.miss{background:var(--bad)} .pill.blocked{background:var(--muted)} .pill.testing{background:var(--warn)} .pill.done{background:var(--accent)} .pill.verified{background:var(--good)}
 .steps td{vertical-align:top} .steps td:first-child{white-space:nowrap}
 .legend2{display:flex;flex-wrap:wrap;gap:6px 14px}.legend2 i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.cats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:1100px){.cats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.cats{grid-template-columns:minmax(0,1fr)}}
+.cat{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:8px;align-content:start;min-width:0}
+.cathd{display:grid;gap:4px}.catno{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600}
+.ink{color:var(--ink)} .chartbox.sm{height:170px}
 .crit{margin:0;padding-left:20px;display:grid;gap:6px;max-width:70ch}
 table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:13px}
 th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
@@ -94,6 +100,31 @@ canvas{max-width:100%}
         <p class="small" style="color:var(--ink)">One rogue, one probability across five agents. Agreements clear, repeated disagreements across partners accuse, a third agent's retrial names who was wrong, error direction adds weight, notes only nudge. Error size and late switches count too, and a second judge blocks framing. Quarantine at p ≥ <span class="tauv2"></span> with a retrial-confirmed error; the ledger commits the median of all answers.</p></div>
       <div style="min-width:0"><h3 class="eyebrow">What we changed, and why</h3><div class="tablewrap"><table class="steps" id="steps"></table></div></div>
     </div>
+  </section>
+
+  <section class="panel" style="display:grid;gap:12px" aria-labelledby="cat-h">
+    <div class="bar" style="justify-content:space-between"><h2 id="cat-h">Approach and findings, by category</h2><span class="small">Held-out seed 2026, n = 500 per bar</span></div>
+    <div class="cats">
+      <div class="cat"><div class="cathd"><span class="catno">Detect</span><h3>Who keeps being wrong, how big, and since when</h3></div>
+        <p class="small ink">One probability across five suspects. Error size is the strongest single signal; allowing a mid-game switch helps late strikers.</p>
+        <div class="chartbox sm"><canvas id="kDetect"></canvas></div>
+        <p class="small">Rogue caught (%). Removing error size costs 6 to 18 points.</p></div>
+      <div class="cat"><div class="cathd"><span class="catno">Verify</span><h3>No conviction without a retrial</h3></div>
+        <p class="small ink">A third agent redoes every disputed item and a second confirms the verdict, so honest agents stop getting fired and a rogue judge cannot frame them.</p>
+        <div class="chartbox sm"><canvas id="kVerify"></canvas></div>
+        <p class="small">Honest agents wrongly removed per game. v2 is 5 to 24 times lower than the baseline.</p></div>
+      <div class="cat"><div class="cathd"><span class="catno">Contain</span><h3>Protect the books even before the catch</h3></div>
+        <p class="small ink">Taking the median of all answers on a disputed item means one lie cannot move the ledger, caught or not.</p>
+        <div class="chartbox sm"><canvas id="kContain"></canvas></div>
+        <p class="small">Mean ledger error per game (log scale).</p></div>
+      <div class="cat"><div class="cathd"><span class="catno">Prove</span><h3>Numbers that survive a skeptic</h3></div>
+        <p class="small ink">Paired games, tuning on dev seeds only, two rogues nobody tuned on, a fresh seed, and longer games. The baseline's false alarms grow with game length; ours do not.</p>
+        <div class="chartbox sm"><canvas id="kProve"></canvas></div>
+        <p class="small">False quarantines per game vs rounds per game, starter rogue.</p></div>
+    </div>
+    <div class="cat" style="grid-column:1/-1"><div class="cathd"><span class="catno">Progress</span><h3>Each version moves toward the top-left</h3></div>
+      <p class="small ink">Catch rate against false quarantines for every rogue. Arrows run baseline → v1 → v2.</p>
+      <div class="chartbox" style="height:260px"><canvas id="kProg"></canvas></div></div>
   </section>
 
   <div class="panel bar">
@@ -300,10 +331,10 @@ function ranks(){
 
 /* ---------- charts ---------- */
 Chart.defaults.font.family = "Inter, system-ui, sans-serif";
-let cL, cP, cI, cS, cD, cLn, minis={};
+let cL, cP, cI, cS, cD, cLn, minis={}, kCharts=[];
 function axes(){ return {x:{grid:{color:css("--line")},ticks:{color:css("--muted")}},y:{grid:{color:css("--line")},ticks:{color:css("--muted")}}}; }
 function makeCharts(){
-  [cL,cP,cI,cS,cD,cLn,...Object.values(minis)].forEach(c=>c&&c.destroy());
+  [cL,cP,cI,cS,cD,cLn,...kCharts,...Object.values(minis)].forEach(c=>c&&c.destroy());
   const labels=[...Array(12)].map((_,i)=>`R${i+1}`);
   cL=new Chart($("cLedger"),{type:"line",data:{labels,datasets:[{label:"Baseline",data:[],borderColor:css("--base"),backgroundColor:css("--base"),tension:.25,pointRadius:2},{label:"Prosecutor v2",data:[],borderColor:css("--pros"),backgroundColor:css("--pros"),tension:.25,pointRadius:2,fill:false}]},options:{maintainAspectRatio:false,animation:{duration:300},scales:axes(),plugins:{legend:{labels:{color:css("--ink"),boxWidth:12}}}}});
   cP=new Chart($("cPost"),{type:"line",data:{labels,datasets:[...AG.map(a=>({label:a,data:[],borderColor:`hsl(${agentHue[a]} 55% 52%)`,backgroundColor:`hsl(${agentHue[a]} 55% 52%)`,tension:.25,pointRadius:2})),{label:"threshold",data:labels.map(()=>D.tau),borderColor:css("--muted"),borderDash:[5,4],pointRadius:0,borderWidth:1}]},options:{maintainAspectRatio:false,animation:{duration:300},scales:{...axes(),y:{...axes().y,min:0,max:1}},plugins:{legend:{labels:{color:css("--ink"),boxWidth:12,filter:i=>i.text!=="threshold"}}}}});
@@ -326,7 +357,28 @@ function makeCharts(){
     const ser=(pol,mon,col,dash)=>({label:`${mon==="Baseline"?"Baseline":"Prosecutor"}, ${pol}`,data:Rs.map(r=>{const x=L.find(y=>y.rounds===r&&y.policy===pol&&y.monitor===mon);return x?x.fq:null}),borderColor:col,backgroundColor:col,borderDash:dash,tension:.2});
     cLn=new Chart($("cLen"),{type:"line",data:{labels:Rs.map(r=>`${r} rds`),datasets:[ser("classic","Baseline",css("--base"),[]),ser("sneaky","Baseline",css("--bad"),[4,3]),ser("classic","Prosecutor",css("--pros"),[]),ser("sneaky","Prosecutor",css("--warn"),[4,3])]},
       options:{maintainAspectRatio:false,scales:{x:axes().x,y:{...axes().y,min:0,title:{display:true,text:"False quarantines per game",color:css("--muted")}}},plugins:{legend:{labels:{color:css("--ink"),boxWidth:12}},tooltip:{callbacks:{afterLabel:c=>{const pol=c.dataset.label.split(", ")[1],mon=c.dataset.label.startsWith("Baseline")?"Baseline":"Prosecutor";const x=L.find(y=>y.rounds===Rs[c.dataIndex]&&y.policy===pol&&y.monitor===mon);return x?`caught ${Math.round(100*x.catch)}%, ledger ${Math.round(x.ledger)}`:"";}}}}}});}
+  kCharts=[]; if(D.report&&D.ablate) categories();
   cards(true);
+}
+function categories(){
+  const R=D.report.filter(x=>x.seed===2026), A=D.ablate.filter(x=>x.seed===2026);
+  const pols=["classic","sneaky","late-big","framer"], lab=["Starter","Sneaky","Late-big","Framer"];
+  const g=(arr,pol,mon,k)=>{const x=arr.find(y=>y.policy===pol&&y.monitor===mon); return x?x[k]:null;};
+  const C=[css("--base"),css("--warn"),css("--bad"),css("--pros"),css("--good")];
+  const bar=(id,sets,opts={})=>kCharts.push(new Chart($(id),{type:"bar",data:{labels:lab,datasets:sets.map((d,i)=>({label:d[0],data:pols.map(p=>d[1](p)),backgroundColor:d[2]||C[i]}))},
+    options:{maintainAspectRatio:false,animation:{duration:400},scales:{x:axes().x,y:{...axes().y,...(opts.y||{})}},plugins:{legend:{labels:{color:css("--ink"),boxWidth:10,font:{size:10}}}}}}));
+  bar("kDetect",[["v2 − error size",p=>g(A,p,"v2 - magnitude","caught_pct"),css("--base")],["v2 − recency",p=>g(A,p,"v2 - recency","caught_pct"),css("--warn")],["v2",p=>g(A,p,"v2 full","caught_pct"),css("--pros")]],{y:{min:0,max:100}});
+  bar("kVerify",[["Baseline",p=>g(R,p,"Baseline","false_q"),css("--base")],["v1",p=>g(R,p,"Prosecutor v1 + repair","false_q"),css("--warn")],["v2 − 2nd judge",p=>g(A,p,"v2 - antiframe","false_q"),css("--bad")],["v2",p=>g(A,p,"v2 full","false_q"),css("--pros")]],{y:{min:0}});
+  bar("kContain",[["Baseline (average)",p=>g(R,p,"Baseline","ledger"),css("--base")],["v1 (2-of-3 majority)",p=>g(R,p,"Prosecutor v1 + repair","ledger"),css("--warn")],["v2 (median)",p=>g(A,p,"v2 full","ledger"),css("--pros")]],{y:{type:"logarithmic",min:1}});
+  if(D.length){const L=D.length.filter(x=>x.policy==="classic"), Rs=[...new Set(L.map(x=>x.rounds))];
+    kCharts.push(new Chart($("kProve"),{type:"line",data:{labels:Rs,datasets:[["Baseline","Baseline",css("--base")],["Prosecutor","Prosecutor v1",css("--pros")]].map(([m,l,c])=>({label:l,data:Rs.map(r=>(L.find(x=>x.rounds===r&&x.monitor===m)||{}).fq),borderColor:c,backgroundColor:c,tension:.2}))},
+      options:{maintainAspectRatio:false,scales:{x:{...axes().x,title:{display:true,text:"rounds",color:css("--muted")}},y:{...axes().y,min:0}},plugins:{legend:{labels:{color:css("--ink"),boxWidth:10,font:{size:10}}}}}}));}
+  const mons=["Baseline","Prosecutor v1 + repair","Prosecutor v2"], pc=[css("--pros"),css("--warn"),css("--bad"),css("--accent"),css("--good")];
+  const all=["classic","sneaky","honest-shaped","late-big","framer"];
+  kCharts.push(new Chart($("kProg"),{type:"scatter",data:{datasets:all.map((p,i)=>({label:p,showLine:true,borderColor:pc[i],backgroundColor:pc[i],pointRadius:[4,5,7],pointStyle:["rectRot","circle","circle"],
+    data:mons.map(m=>({x:g(R,p,m,"false_q"),y:g(R,p,m,"caught_pct"),m}))}))},
+    options:{maintainAspectRatio:false,scales:{x:{...axes().x,min:0,title:{display:true,text:"False quarantines per game (lower is better)",color:css("--muted")}},y:{...axes().y,min:40,max:100,title:{display:true,text:"Rogue caught %",color:css("--muted")}}},
+      plugins:{legend:{labels:{color:css("--ink"),boxWidth:10}},tooltip:{callbacks:{label:c=>`${c.dataset.label}, ${c.raw.m}: ${c.raw.y}% caught, ${c.raw.x} false/game`}}}}}));
 }
 function updateCharts(){
   const r=st.r, B=D.policies[st.pol].Baseline.games[st.gi], P=D.policies[st.pol].Prosecutor.games[st.gi];

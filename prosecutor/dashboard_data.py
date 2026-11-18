@@ -81,6 +81,11 @@ def main(out):
         sweep.append({"tau": None, "policy": pol, "catch": round(s["catch_rate"], 3), "fq": round(s["false_q"], 3), "baseline": True})
     data["sweep"] = sweep
     import pathlib
+    sc = pathlib.Path(out).parent.parent / "scripts"
+    for name in ("report", "ablate"):
+        f = sc / f"{name}.jsonl"
+        if f.exists():
+            data[name] = [json.loads(l) for l in f.read_text().splitlines() if l.strip()]
     ln = pathlib.Path(out).parent / "length.json"
     if ln.exists():
         data["length"] = json.loads(ln.read_text())
