@@ -1,0 +1,14 @@
+# Local copies of the public starter and run outputs
+/starter/
+/trust-safety-impact-lab/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.env.*
+*.jsonl
+results/
+.DS_Store
+/game/
+/data/

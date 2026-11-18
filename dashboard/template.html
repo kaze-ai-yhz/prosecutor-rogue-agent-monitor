@@ -1,0 +1,349 @@
+<title>Prosecutor Console</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* Layout: control bar, scoreboard, then a replay stage beside the live rankings, then charts and per-agent report cards. */
+:root{
+  --bg:#f3f5f8; --panel:#ffffff; --ink:#16202e; --muted:#5d6b7e; --line:#dde3ea;
+  --accent:#2f5bd3; --accent-soft:#e3eafb; --good:#1f8a5b; --warn:#c98a12; --bad:#c8402f;
+  --base:#8a94a3; --pros:#2f5bd3;
+  --display:"Space Grotesk",system-ui,sans-serif; --body:"Inter",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f141c; --panel:#171e29; --ink:#e7ecf3; --muted:#9aa6b6; --line:#2a3443;
+  --accent:#7d9cff; --accent-soft:#1f2a44; --good:#46c08a; --warn:#e3a93a; --bad:#ef6b58; --base:#7f8a99; --pros:#7d9cff; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141c; --panel:#171e29; --ink:#e7ecf3; --muted:#9aa6b6; --line:#2a3443;
+  --accent:#7d9cff; --accent-soft:#1f2a44; --good:#46c08a; --warn:#e3a93a; --bad:#ef6b58; --base:#7f8a99; --pros:#7d9cff; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45}
+.wrap{max-width:1280px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:26px} h2{font-size:16px} h3{font-size:14px}
+.sub{color:var(--muted);max-width:75ch}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.bar label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;gap:6px;align-items:center}
+select,button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 10px}
+button{cursor:pointer} button:hover{border-color:var(--accent)} button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.grid2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:900px){.grid2,.grid3{grid-template-columns:minmax(0,1fr)}}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:700px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.kpi .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi .v{font-family:var(--display);font-size:22px}
+.kpi .who{font-size:12px;color:var(--muted)}
+.kpi .delta{font-size:12px;font-weight:600}
+.good{color:var(--good)} .bad{color:var(--bad)}
+.stagewrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,260px);gap:12px}
+@media (max-width:700px){.stagewrap{grid-template-columns:minmax(0,1fr)}}
+svg#stage{width:100%;height:auto;max-width:100%;display:block}
+.log{font-family:var(--mono);font-size:12px;max-height:340px;overflow:auto;display:grid;gap:6px}
+.log div{padding:6px 8px;border-radius:6px;background:var(--accent-soft)}
+.log div.q{background:color-mix(in srgb,var(--bad) 18%,var(--panel))}
+.rank{display:grid;gap:6px}
+.rank .it{display:grid;grid-template-columns:22px 28px minmax(0,1fr) auto;gap:8px;align-items:center;font-variant-numeric:tabular-nums}
+.meter{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%}
+.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+@media (max-width:1000px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.cards{grid-template-columns:minmax(0,1fr)}}
+.card{display:grid;gap:8px}
+.card .hd{display:flex;align-items:center;gap:10px}
+.grade{margin-left:auto;font-family:var(--display);font-size:24px;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff}
+.tag{font-size:11px;padding:2px 6px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.tag.rogue{border-color:var(--bad);color:var(--bad)} .tag.out{border-color:var(--warn);color:var(--warn)}
+.legend{height:12px;border-radius:6px;background:linear-gradient(90deg,hsl(0 70% 48%),hsl(40 85% 50%),hsl(120 55% 40%))}
+.small{font-size:12px;color:var(--muted)}
+.tldr-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:20px}
+@media (max-width:900px){.tldr-grid{grid-template-columns:minmax(0,1fr)}}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-family:var(--body);font-weight:600;margin-bottom:6px}
+.goals{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.goals li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:baseline}
+.pill{font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;color:#fff;white-space:nowrap}
+.pill.met{background:var(--good)} .pill.miss{background:var(--bad)} .pill.blocked{background:var(--muted)} .pill.testing{background:var(--warn)} .pill.done{background:var(--accent)}
+.steps td{vertical-align:top} .steps td:first-child{white-space:nowrap}
+.crit{margin:0;padding-left:20px;display:grid;gap:6px;max-width:70ch}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:13px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.tablewrap{overflow-x:auto}
+canvas{max-width:100%}
+.chartbox{position:relative;height:220px}
+.mini{position:relative;height:110px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:6px">
+    <h1>Prosecutor Console</h1>
+    <p class="sub">Five agents reconcile a ledger for 12 rounds. One is secretly the rogue. Replay any held-out game and watch the monitor build its case: who disagreed with whom, what the third-agent retrial showed, how suspicion moved, and how much each agent pushed the books off. Truth is shown here for scoring only; the monitor never sees it.</p>
+  </header>
+
+  <section class="panel tldr" aria-labelledby="tldr-h">
+    <div class="bar" style="justify-content:space-between"><h2 id="tldr-h">TL;DR</h2><span class="small">Starter rogue, held-out n = 500 · cells read caught · false quarantines/game · ledger error</span></div>
+    <div class="tldr-grid">
+      <div style="min-width:0"><h3 class="eyebrow">Goals</h3><ul class="goals" id="goals"></ul>
+        <h3 class="eyebrow" style="margin-top:12px">Criteria in one line</h3>
+        <p class="small" style="color:var(--ink)">One rogue, one probability across five agents. Agreements clear, repeated disagreements across partners accuse, a third agent's retrial names who was wrong, error direction adds weight, notes only nudge. Quarantine at p ≥ <span class="tauv2"></span> with a retrial-confirmed error; repair the ledger with the 2-of-3 majority.</p></div>
+      <div style="min-width:0"><h3 class="eyebrow">What we changed, and why</h3><div class="tablewrap"><table class="steps" id="steps"></table></div></div>
+    </div>
+  </section>
+
+  <div class="panel bar">
+    <label for="pol">Rogue <select id="pol"><option value="classic">Classic (starter)</option><option value="sneaky">Sneaky (trust, then strike late)</option><option value="honest-shaped">Honest-shaped (small, two-sided)</option><option value="late-big">Late big strikes (held back)</option><option value="framer">Framer (held back)</option></select></label>
+    <label for="mon">Monitor <select id="mon"><option value="Prosecutor">Prosecutor + repair</option><option value="Baseline">Baseline (two strikes)</option></select></label>
+    <label for="game">Game <select id="game"></select></label>
+    <span style="flex:1"></span>
+    <button id="prev" aria-label="Previous round">◀</button>
+    <button id="play" class="primary">Play</button>
+    <button id="next" aria-label="Next round">▶</button>
+    <label for="speed">Speed <select id="speed"><option value="1400">Slow</option><option value="800" selected>Normal</option><option value="350">Fast</option></select></label>
+  </div>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="grid2">
+    <div class="panel">
+      <div class="bar" style="justify-content:space-between"><h2 id="rtitle">Round 0</h2><span class="small" id="gameinfo"></span></div>
+      <div class="stagewrap">
+        <svg id="stage" viewBox="0 0 440 360" role="img" aria-label="Agents table, current round"></svg>
+        <div><h3 style="margin-bottom:6px">Evidence log</h3><div class="log" id="log"></div></div>
+      </div>
+    </div>
+    <div class="panel" style="display:grid;gap:14px;align-content:start">
+      <div><h2>Most suspicious now</h2><p class="small">Probability each agent is the rogue, from the monitor's own evidence.</p><div class="rank" id="rankSus"></div></div>
+      <div><h2>Most off so far</h2><p class="small">Cumulative distance each agent pushed the ledger (scored against the true totals).</p><div class="rank" id="rankImp"></div></div>
+    </div>
+  </section>
+
+  <section class="grid3">
+    <div class="panel"><h2>Ledger error, round by round</h2><p class="small">Cumulative |team total − true total| in this game, same rogue and items for both monitors.</p><div class="chartbox"><canvas id="cLedger"></canvas></div></div>
+    <div class="panel"><h2>Suspicion over time</h2><p class="small">Prosecutor's probability per agent. Dashed line is the quarantine threshold.</p><div class="chartbox"><canvas id="cPost"></canvas></div></div>
+    <div class="panel"><h2>Who pushed the ledger</h2><p class="small">Each agent's signed push per round, (answer − truth) ÷ 2, before any repair. Above zero pushed the total up.</p><div class="chartbox"><canvas id="cImp"></canvas></div></div>
+  </section>
+
+  <section class="panel" style="display:grid;gap:10px">
+    <div class="bar" style="justify-content:space-between"><h2>Agent report cards</h2>
+      <div style="display:flex;gap:8px;align-items:center" class="small">Grade scale <span>F</span><div class="legend" style="width:160px"></div><span>A</span></div></div>
+    <p class="small">Score = 100 × e<sup>−D/250</sup>, where D is the total distance the agent tried to push the ledger this game, before any repair. A ≥ 90, B ≥ 75, C ≥ 55, D ≥ 35, F below. The bars show each round's signed impact.</p>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel" style="display:grid;gap:10px;align-content:start">
+      <h2>How Prosecutor decides</h2>
+      <ol class="crit">
+        <li><b>Exactly one rogue.</b> One probability is spread across the five agents, so evidence against one clears the others.</li>
+        <li><b>Agreements clear.</b> Each clean agreement lowers an agent's odds of being the rogue.</li>
+        <li><b>Disagreements across partners.</b> The agent that keeps disagreeing with different partners becomes the common factor.</li>
+        <li><b>Retrial names the wrong one.</b> The most trusted other agent redoes each disputed item; a 2-to-1 split confirms who erred.</li>
+        <li><b>Direction.</b> Confirmed errors that keep pushing one way add evidence; honest slips go both ways.</li>
+        <li><b>Notes are a hint.</b> Claude's read of a flagged agent's notes moves its odds by a small capped amount, never enough to convict.</li>
+        <li><b>Quarantine rule.</b> Probability ≥ <span id="tauv"></span> <i>and</i> at least one retrial-confirmed error. After a catch the rest clear quickly.</li>
+        <li><b>Repair.</b> When a retrial gives a 2-of-3 majority, the ledger takes the majority instead of the average.</li>
+      </ol>
+    </div>
+    <div class="panel" style="display:grid;gap:8px;align-content:start">
+      <h2>Where the damage lands</h2>
+      <p class="small">Average ledger damage per game for the selected rogue, split by when the rogue lied, plus damage from honest slips. 500 held-out games.</p>
+      <div class="chartbox" style="height:200px"><canvas id="cDmg"></canvas></div>
+      <div class="tablewrap"><table id="missTbl"></table></div>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel"><h2>Held-out results, all four numbers</h2><p class="small" id="tblnote"></p><div class="tablewrap"><table id="tbl"></table></div></div>
+    <div class="panel"><h2>Catch rate vs false quarantines</h2><p class="small">Prosecutor across thresholds (line) against the baseline (single point), 300 held-out games each.</p><div class="chartbox" style="height:260px"><canvas id="cSweep"></canvas></div></div>
+  </section>
+  <p class="small">Data: organizer's original sim (starter commit af7271b) in a paired harness, held-out seed <span id="seed"></span>, threshold chosen on dev seed 1000. Mock agents; notes come from one shared pool so they carry no signal.</p>
+</div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const D = JSON.parse(document.getElementById('data').textContent);
+const AG = ["Ada","Ben","Cy","Dee","Eli"];
+const SHAPES = {Ada:"circle",Ben:"square",Cy:"tri",Dee:"diamond",Eli:"hex"};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString();
+let st = {pol:"classic", mon:"Prosecutor", gi:0, r:0, timer:null};
+const gradeOf = d => { const s = 100*Math.exp(-d/250); const L = s>=90?"A":s>=75?"B":s>=55?"C":s>=35?"D":"F"; return {s, L, col:`hsl(${Math.round(120*s/100)} ${s>50?55:70}% ${s>50?40:48}%)`}; };
+const agentHue = {Ada:210,Ben:280,Cy:20,Dee:160,Eli:330};
+
+function game(mon){ return D.policies[st.pol][mon||st.mon].games[st.gi]; }
+function upto(g){ return g.rounds.slice(0, st.r); }
+function cumImpact(g, r){ const c={}; AG.forEach(a=>c[a]=0); g.rounds.slice(0,r).forEach(x=>{for(const k in x.imp) c[k]+=Math.abs(x.imp[k]);}); return c; }
+function activeAt(g, r){ const out=new Set(); g.rounds.slice(0,r).forEach(x=>{ if(x.q) out.add(x.q); }); return out; }
+
+/* ---------- KPIs + table ---------- */
+function kpis(){
+  const B=D.policies[st.pol].Baseline.summary, P=D.policies[st.pol].Prosecutor.summary;
+  const items=[
+    ["Rogue caught", s=>`${Math.round(100*s.catch_rate)}%`, s=>`${s.caught}/${s.n}`, (b,p)=>p.catch_rate-b.catch_rate, true, v=>`${v>=0?"+":""}${Math.round(100*v)} pts`],
+    ["Median round caught", s=>s.median_round??"–", s=>`mean ${s.mean_round_miss13.toFixed(1)} (miss=13)`, (b,p)=>p.median_round-b.median_round, false, v=>`${v>0?"+":""}${v}`],
+    ["False quarantines / game", s=>s.false_q.toFixed(2), s=>`CI ${s.false_q_ci[0].toFixed(2)}–${s.false_q_ci[1].toFixed(2)}`, (b,p)=>p.false_q-b.false_q, false, v=>`${v>0?"+":""}${v.toFixed(2)}`],
+    ["Mean ledger error", s=>fmt(s.ledger), s=>`CI ${fmt(s.ledger_ci[0])}–${fmt(s.ledger_ci[1])}`, (b,p)=>p.ledger-b.ledger, false, v=>`${v>0?"+":""}${fmt(v)}`]];
+  $("kpis").innerHTML = items.map(([l,v,sub,dl,hi,df])=>{ const d=dl(B,P); const ok = hi? d>=0 : d<=0;
+    return `<div class="panel kpi"><div class="lbl">${l}</div>
+      <div class="row"><span class="who">Baseline</span><span class="v" style="color:var(--base)">${v(B)}</span></div>
+      <div class="row"><span class="who">Prosecutor</span><span class="v" style="color:var(--pros)">${v(P)}</span></div>
+      <div class="row"><span class="small">${sub(P)}</span><span class="delta ${ok?"good":"bad"}">${df(d)}</span></div></div>`;}).join("");
+  const rows=[["classic","Classic"],["sneaky","Sneaky"],["honest-shaped","Honest-shaped"],["late-big","Late big (held back)"],["framer","Framer (held back)"]];
+  let h="<tr><th>Rogue</th><th>Monitor</th><th>Caught</th><th>Median rd</th><th>False q/game</th><th>Ledger err</th><th>Extra calls</th></tr>";
+  rows.forEach(([k,n])=>["Baseline","Prosecutor"].forEach(m=>{const s=D.policies[k][m].summary;
+    h+=`<tr${k===st.pol?' style="font-weight:600"':''}><td>${n}</td><td>${m==="Prosecutor"?"Prosecutor + repair":m}</td><td>${s.caught}/${s.n} (${Math.round(100*s.catch_rate)}%)</td><td>${s.median_round??"–"}</td><td>${s.false_q.toFixed(2)}</td><td>${fmt(s.ledger)}</td><td>${s.extra_calls.toFixed(1)}</td></tr>`;}));
+  $("tbl").innerHTML=h; $("tblnote").textContent=`n = ${D.policies.classic.Baseline.summary.n} held-out games per row, paired (same rogue, items and agent behaviour).`;
+  document.querySelectorAll(".tauv2").forEach(e=>e.textContent=D.tau); tldr(); $("seed").textContent=D.seed; $("tauv").textContent=D.tau;
+}
+
+function tldr(){
+  const P=D.progress; if(!P) return;
+  $("goals").innerHTML=P.goals.map(g=>{
+    if(g.manual) return `<li><span class="pill blocked">${g.manual}</span><span>${g.label}<br><span class="small">${g.note||""}</span></span><span></span></li>`;
+    const s=D.policies[g.policy].Prosecutor.summary[g.metric], ok = g.op==="<"? s<g.target : s>=g.target;
+    const v = g.metric==="catch_rate"? `${Math.round(100*s)}%` : g.metric==="false_q"? s.toFixed(2) : fmt(s);
+    return `<li><span class="pill ${ok?"met":"miss"}">${ok?"met":"not yet"}</span><span>${g.label}</span><span class="small" style="font-variant-numeric:tabular-nums">${v}</span></li>`;}).join("");
+  $("steps").innerHTML=`<tr><th>Step</th><th>Finding</th><th>Change</th><th>Starter rogue</th><th>Sneaky rogue</th></tr>`+
+    P.steps.map(x=>`<tr><td><b>${x.v}</b><br><span class="pill ${x.status}">${x.status}</span></td><td>${x.finding}</td><td>${x.change}</td><td style="white-space:nowrap;font-variant-numeric:tabular-nums">${x.classic}</td><td style="white-space:nowrap;font-variant-numeric:tabular-nums">${x.sneaky}</td></tr>`).join("");
+}
+
+/* ---------- stage ---------- */
+const POS = {}; AG.forEach((a,i)=>{const t=-Math.PI/2+i*2*Math.PI/5; POS[a]=[220+125*Math.cos(t),180+125*Math.sin(t)];});
+function shape(a, x, y, r){
+  const s=SHAPES[a];
+  if(s==="circle") return `<circle cx="${x}" cy="${y}" r="${r}"/>`;
+  if(s==="square") return `<rect x="${x-r*.88}" y="${y-r*.88}" width="${r*1.76}" height="${r*1.76}" rx="6"/>`;
+  const n = s==="tri"?3: s==="diamond"?4:6, rot = s==="tri"?-Math.PI/2: s==="diamond"?0:Math.PI/6, rr = s==="tri"?r*1.2:r*1.08;
+  const p=[...Array(n)].map((_,i)=>{const t=rot+i*2*Math.PI/n; return `${x+rr*Math.cos(t)},${y+rr*Math.sin(t)}`}).join(" ");
+  return `<polygon points="${p}"/>`;
+}
+function stage(){
+  const g=game(), r=st.r, cur = r>0? g.rounds[r-1]:null, out=activeAt(g,r), ci=cumImpact(g,r);
+  const ink=css("--ink"), muted=css("--muted"), line=css("--line"), bad=css("--bad"), acc=css("--accent"), panel=css("--panel");
+  let s=`<rect x="0" y="0" width="440" height="360" fill="${panel}"/>`;
+  s+=`<circle cx="220" cy="180" r="62" fill="none" stroke="${line}" stroke-dasharray="4 4"/>`;
+  s+=`<text x="220" y="172" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="${muted}">LEDGER Δ</text>`;
+  const cum = g.rounds.slice(0,r).reduce((t,x)=>t+Math.abs(x.team-x.truth),0);
+  s+=`<text x="220" y="196" text-anchor="middle" font-family="var(--display)" font-size="22" fill="${cum>200?bad:ink}">${fmt(cum)}</text>`;
+  if(cur){
+    const [a,b]=Object.keys(cur.ans), dis = cur.ans[a]!==cur.ans[b];
+    s+=`<line x1="${POS[a][0]}" y1="${POS[a][1]}" x2="${POS[b][0]}" y2="${POS[b][1]}" stroke="${dis?bad:acc}" stroke-width="3" opacity=".8"><animate attributeName="stroke-opacity" from="0" to="1" dur=".4s"/></line>`;
+    if(cur.ret){ const t=cur.ret.n; const mx=(POS[a][0]+POS[b][0])/2, my=(POS[a][1]+POS[b][1])/2;
+      s+=`<line x1="${POS[t][0]}" y1="${POS[t][1]}" x2="${mx}" y2="${my}" stroke="${acc}" stroke-width="2" stroke-dasharray="5 4"/>`;}
+  }
+  AG.forEach(a=>{
+    const [x,y]=POS[a], gr=gradeOf(ci[a]), isOut=out.has(a), inPair=cur && a in cur.ans, isRet = cur&&cur.ret&&cur.ret.n===a;
+    const p = cur&&cur.post? cur.post[a]:null;
+    s+=`<g opacity="${isOut?0.35:1}">`;
+    s+=`<circle cx="${x}" cy="${y}" r="34" fill="none" stroke="${gr.col}" stroke-width="5"/>`;
+    if(p!==null) s+=`<circle cx="${x}" cy="${y}" r="40" fill="none" stroke="${bad}" stroke-width="3" stroke-dasharray="${(2*Math.PI*40*p).toFixed(1)} 999" transform="rotate(-90 ${x} ${y})"/>`;
+    s+=`<g fill="hsl(${agentHue[a]} 55% 52%)" stroke="${inPair||isRet?ink:"none"}" stroke-width="2">${shape(a,x,y,22)}</g>`;
+    s+=`<text x="${x}" y="${y+4}" text-anchor="middle" font-family="var(--display)" font-weight="700" font-size="13" fill="#fff">${a}</text>`;
+    s+=`<text x="${x}" y="${y+52}" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="${muted}">${gr.L} · ${Math.round(gr.s)}${p!==null?` · ${Math.round(100*p)}%`:""}</text>`;
+    if(isOut) s+=`<text x="${x}" y="${y-42}" text-anchor="middle" font-size="11" font-family="var(--mono)" fill="${bad}">QUARANTINED</text>`;
+    if(cur && a in cur.ans){ const v=cur.ans[a], off=v-cur.truth;
+      s+=`<text x="${x}" y="${y-44}" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="${off?bad:ink}">${fmt(v)}${off?` (${off>0?"+":""}${off})`:""}</text>`;}
+    if(isRet){ const v=cur.ret.a, off=v-cur.truth; s+=`<text x="${x}" y="${y-44}" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="${acc}">retrial ${fmt(v)}</text>`; }
+    s+=`</g>`;
+  });
+  $("stage").innerHTML=s;
+  $("rtitle").textContent = r? `Round ${r} of ${g.rounds.length}` : "Before round 1";
+  $("gameinfo").textContent = `Rogue: ${g.rogue} · ${g.caught?`caught round ${g.caught}`:"not caught"} · ${g.fq} false quarantine${g.fq===1?"":"s"} · final error ${fmt(g.err)}`;
+}
+function logPanel(){
+  const g=game(); const items=[];
+  g.rounds.slice(0,st.r).forEach(x=>{
+    const [a,b]=Object.keys(x.ans); let t=`R${x.r} ${a} ${fmt(x.ans[a])} vs ${b} ${fmt(x.ans[b])}`;
+    t+= x.ans[a]===x.ans[b]? " · agree" : " · DISAGREE";
+    if(x.ret){ const v=x.ret.a; const w = v===x.ans[a]? b : v===x.ans[b]? a : null; t+=` · retrial ${x.ret.n}: ${fmt(v)} → ${w?`${w} wrong`:"inconclusive"}`; }
+    t+=` · truth ${fmt(x.truth)}`;
+    if(x.q) t+=` · QUARANTINE ${x.q}${x.q===g.rogue?" (rogue)":" (honest)"}`; else if(x.why && x.why.startsWith("hold") && x.post && Math.max(...Object.values(x.post))>0.4) t+=" · held: below threshold or no retrial-confirmed error";
+    items.push(`<div class="${x.q?"q":""}">${t}</div>`);
+  });
+  $("log").innerHTML = items.reverse().join("") || `<div>Press Play to start the replay.</div>`;
+}
+function ranks(){
+  const g=game(), r=st.r, cur=r? g.rounds[r-1]:null, ci=cumImpact(g,r), out=activeAt(g,r);
+  const pg = D.policies[st.pol].Prosecutor.games[st.gi], pc = r? pg.rounds[Math.min(r,pg.rounds.length)-1]:null;
+  const post = (pc&&pc.post)||Object.fromEntries(AG.map(a=>[a,.2]));
+  const row=(a,i,val,frac,col,txt)=>`<div class="it"><span class="small">#${i+1}</span><svg viewBox="0 0 28 28" width="28" height="28"><g fill="hsl(${agentHue[a]} 55% 52%)">${shape(a,14,14,10)}</g></svg><div><div style="display:flex;justify-content:space-between"><span>${a}${a===g.rogue&&r>=12?" · rogue":""}${out.has(a)?" · out":""}</span><span>${txt}</span></div><div class="meter"><i style="width:${(100*frac).toFixed(1)}%;background:${col}"></i></div></div><span></span></div>`;
+  $("rankSus").innerHTML = AG.slice().sort((a,b)=>post[b]-post[a]).slice(0,3).map((a,i)=>row(a,i,post[a],post[a],css("--bad"),`${Math.round(100*post[a])}%`)).join("");
+  const mx=Math.max(1,...Object.values(ci));
+  $("rankImp").innerHTML = AG.slice().sort((a,b)=>ci[b]-ci[a]).slice(0,3).map((a,i)=>row(a,i,ci[a],ci[a]/mx,gradeOf(ci[a]).col,`${fmt(ci[a])} · ${gradeOf(ci[a]).L}`)).join("");
+}
+
+/* ---------- charts ---------- */
+Chart.defaults.font.family = "Inter, system-ui, sans-serif";
+let cL, cP, cI, cS, cD, minis={};
+function axes(){ return {x:{grid:{color:css("--line")},ticks:{color:css("--muted")}},y:{grid:{color:css("--line")},ticks:{color:css("--muted")}}}; }
+function makeCharts(){
+  [cL,cP,cI,cS,cD,...Object.values(minis)].forEach(c=>c&&c.destroy());
+  const labels=[...Array(12)].map((_,i)=>`R${i+1}`);
+  cL=new Chart($("cLedger"),{type:"line",data:{labels,datasets:[{label:"Baseline",data:[],borderColor:css("--base"),backgroundColor:css("--base"),tension:.25,pointRadius:2},{label:"Prosecutor + repair",data:[],borderColor:css("--pros"),backgroundColor:css("--pros"),tension:.25,pointRadius:2,fill:false}]},options:{maintainAspectRatio:false,animation:{duration:300},scales:axes(),plugins:{legend:{labels:{color:css("--ink"),boxWidth:12}}}}});
+  cP=new Chart($("cPost"),{type:"line",data:{labels,datasets:[...AG.map(a=>({label:a,data:[],borderColor:`hsl(${agentHue[a]} 55% 52%)`,backgroundColor:`hsl(${agentHue[a]} 55% 52%)`,tension:.25,pointRadius:2})),{label:"threshold",data:labels.map(()=>D.tau),borderColor:css("--muted"),borderDash:[5,4],pointRadius:0,borderWidth:1}]},options:{maintainAspectRatio:false,animation:{duration:300},scales:{...axes(),y:{...axes().y,min:0,max:1}},plugins:{legend:{labels:{color:css("--ink"),boxWidth:12,filter:i=>i.text!=="threshold"}}}}});
+  cI=new Chart($("cImp"),{type:"bar",data:{labels,datasets:AG.map(a=>({label:a,data:[],backgroundColor:`hsl(${agentHue[a]} 55% 52%)`,stack:"s"}))},options:{maintainAspectRatio:false,animation:{duration:300},scales:{x:{...axes().x,stacked:true},y:{...axes().y,stacked:true}},plugins:{legend:{labels:{color:css("--ink"),boxWidth:12}}}}});
+  const sw=D.sweep, mk=(p,b)=>sw.filter(s=>s.policy===p&&!!s.baseline===b).map(s=>({x:s.fq,y:100*s.catch,tau:s.tau}));
+  cS=new Chart($("cSweep"),{type:"scatter",data:{datasets:[
+    {label:"Prosecutor, classic",data:mk("classic",false),showLine:true,borderColor:css("--pros"),backgroundColor:css("--pros")},
+    {label:"Prosecutor, sneaky",data:mk("sneaky",false),showLine:true,borderColor:css("--warn"),backgroundColor:css("--warn"),borderDash:[4,3]},
+    {label:"Baseline, classic",data:mk("classic",true),pointRadius:7,pointStyle:"rectRot",backgroundColor:css("--base"),borderColor:css("--base")},
+    {label:"Baseline, sneaky",data:mk("sneaky",true),pointRadius:7,pointStyle:"triangle",backgroundColor:css("--bad"),borderColor:css("--bad")}]},
+    options:{maintainAspectRatio:false,scales:{x:{...axes().x,title:{display:true,text:"False quarantines per game",color:css("--muted")},min:0},y:{...axes().y,title:{display:true,text:"Rogue caught (%)",color:css("--muted")},min:0,max:100}},
+      plugins:{legend:{labels:{color:css("--ink"),boxWidth:12}},tooltip:{callbacks:{label:c=>`${c.dataset.label}${c.raw.tau?` τ=${c.raw.tau}`:""}: ${c.raw.y.toFixed(0)}% caught, ${c.raw.x.toFixed(2)} false/game`}}}}});
+  const A=D.policies[st.pol], bands=["R1-4","R5-8","R9-12","honest"], bcol=[css("--bad"),css("--warn"),css("--accent"),css("--base")];
+  cD=new Chart($("cDmg"),{type:"bar",data:{labels:["Baseline","Prosecutor + repair"],datasets:bands.map((b,i)=>({label:b==="honest"?"Honest slips":`Rogue lies, ${b}`,data:[A.Baseline.autopsy.damage[b],A.Prosecutor.autopsy.damage[b]],backgroundColor:bcol[i],stack:"d"}))},
+    options:{indexAxis:"y",maintainAspectRatio:false,animation:{duration:300},scales:{x:{...axes().x,stacked:true,title:{display:true,text:"Ledger damage per game",color:css("--muted")}},y:{...axes().y,stacked:true}},plugins:{legend:{labels:{color:css("--ink"),boxWidth:12}}}}});
+  const m=k=>A[k].autopsy;
+  $("missTbl").innerHTML=`<tr><th></th><th>Missed: never lied</th><th>Lied once</th><th>Lied 2+</th><th>False q before / after catch</th></tr>`+
+    ["Baseline","Prosecutor"].map(k=>`<tr><td>${k==="Prosecutor"?"Prosecutor":"Baseline"}</td><td>${m(k).miss["never lied"]}</td><td>${m(k).miss["lied once"]}</td><td>${m(k).miss["lied 2+"]}</td><td>${m(k).fq_before.toFixed(2)} / ${m(k).fq_after.toFixed(2)}</td></tr>`).join("");
+  cards(true);
+}
+function updateCharts(){
+  const r=st.r, B=D.policies[st.pol].Baseline.games[st.gi], P=D.policies[st.pol].Prosecutor.games[st.gi];
+  const cum=g=>{let t=0; return g.rounds.slice(0,r).map(x=>t+=Math.abs(x.team-x.truth));};
+  cL.data.datasets[0].data=cum(B); cL.data.datasets[1].data=cum(P); cL.update();
+  AG.forEach((a,i)=>{ cP.data.datasets[i].data=P.rounds.slice(0,r).map(x=>x.post?x.post[a]:null); }); cP.update();
+  const g=game(); AG.forEach((a,i)=>{ cI.data.datasets[i].data=g.rounds.slice(0,r).map(x=>x.imp[a]??0); }); cI.update();
+  cards(false);
+}
+function cards(build){
+  const g=game(), r=st.r, ci=cumImpact(g,r), out=activeAt(g,r), done = r>=g.rounds.length;
+  if(build){
+    $("cards").innerHTML = AG.map(a=>`<div class="panel card"><div class="hd"><svg viewBox="0 0 44 44" width="44" height="44"><g fill="hsl(${agentHue[a]} 55% 52%)">${shape(a,22,22,16)}</g><text x="22" y="26" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" font-family="var(--display)">${a}</text></svg>
+      <div><h3>${a}</h3><div id="tags-${a}" style="display:flex;gap:4px;flex-wrap:wrap"></div></div><div class="grade" id="gr-${a}">A</div></div>
+      <div class="meter"><i id="gm-${a}"></i></div><div class="small" id="gs-${a}"></div><div class="mini"><canvas id="m-${a}"></canvas></div></div>`).join("");
+    AG.forEach(a=>{ minis[a]=new Chart($(`m-${a}`),{type:"bar",data:{labels:[...Array(12)].map((_,i)=>i+1),datasets:[{data:[],backgroundColor:[]}]},options:{maintainAspectRatio:false,animation:{duration:250},plugins:{legend:{display:false}},scales:{x:{display:false},y:{grid:{color:css("--line")},ticks:{color:css("--muted"),maxTicksLimit:3}}}}}); });
+  }
+  AG.forEach(a=>{
+    const gr=gradeOf(ci[a]); const el=$(`gr-${a}`); el.textContent=gr.L; el.style.background=gr.col;
+    $(`gm-${a}`).style.width=`${gr.s.toFixed(0)}%`; $(`gm-${a}`).style.background=gr.col;
+    const n=g.rounds.slice(0,r).filter(x=>a in x.ans).length, w=g.rounds.slice(0,r).filter(x=>a in x.ans && x.ans[a]!==x.truth).length;
+    $(`gs-${a}`).textContent=`Score ${gr.s.toFixed(0)} · pushed ledger ${fmt(ci[a])} · wrong ${w}/${n} assignments`;
+    $(`tags-${a}`).innerHTML = (done&&a===g.rogue?`<span class="tag rogue">rogue</span>`:"")+(out.has(a)?`<span class="tag out">quarantined</span>`:"");
+    const vals=g.rounds.slice(0,r).map(x=>x.imp[a]??0);
+    minis[a].data.datasets[0].data=vals; minis[a].data.datasets[0].backgroundColor=vals.map(v=>v>0?css("--bad"):v<0?css("--warn"):css("--line")); minis[a].update();
+  });
+}
+
+/* ---------- controls ---------- */
+function render(){ stage(); logPanel(); ranks(); updateCharts(); }
+function stop(){ clearInterval(st.timer); st.timer=null; $("play").textContent="Play"; }
+function step(d){ const n=game().rounds.length; st.r=Math.max(0,Math.min(n,st.r+d)); render(); if(st.r>=n) stop(); }
+$("play").onclick=()=>{ if(st.timer) return stop(); if(st.r>=game().rounds.length) st.r=0; $("play").textContent="Pause"; st.timer=setInterval(()=>step(1), +$("speed").value); };
+$("next").onclick=()=>{stop();step(1)}; $("prev").onclick=()=>{stop();step(-1)};
+function fillGames(){ const gs=D.policies[st.pol].Prosecutor.games; $("game").innerHTML=gs.map((g,i)=>`<option value="${i}">#${g.gid} · rogue ${g.rogue}${g.caught?` · caught R${g.caught}`:" · missed"}</option>`).join(""); $("game").value=st.gi; }
+$("pol").onchange=e=>{stop(); st.pol=e.target.value; st.gi=0; st.r=12; fillGames(); kpis(); makeCharts(); render();};
+$("mon").onchange=e=>{stop(); st.mon=e.target.value; st.r=Math.min(st.r,game().rounds.length); render();};
+$("game").onchange=e=>{stop(); st.gi=+e.target.value; st.r=0; render(); $("play").click();};
+$("speed").onchange=()=>{ if(st.timer){stop(); $("play").click();} };
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{makeCharts();render();});
+// Open on a finished replay of a game where the rogue is caught, so the first view is complete.
+fillGames(); const firstCaught = D.policies[st.pol].Prosecutor.games.findIndex(g=>g.caught); st.gi = Math.max(0, firstCaught); $("game").value=st.gi;
+st.r = game().rounds.length; kpis(); makeCharts(); render();
+</script>

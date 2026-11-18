@@ -1,0 +1,17 @@
+{
+  "goals": [
+    {"label": "False quarantines below baseline (1.37/game)", "metric": "false_q", "policy": "classic", "op": "<", "target": 1.37},
+    {"label": "Keep catch rate at or above baseline (87%)", "metric": "catch_rate", "policy": "classic", "op": ">=", "target": 0.872},
+    {"label": "Ledger error below baseline (289)", "metric": "ledger", "policy": "classic", "op": "<", "target": 289},
+    {"label": "Sneaky rogue: catch at least as often as baseline (68%)", "metric": "catch_rate", "policy": "sneaky", "op": ">=", "target": 0.678},
+    {"label": "Held-back rogues: catch at least as often as baseline", "metric": "catch_rate", "policy": "late-big", "op": ">=", "target": 0.59},
+    {"label": "Note reading checked on real Among Us logs", "manual": "blocked", "note": "Hugging Face and the Claude API are unreachable from the build machine"}
+  ],
+  "steps": [
+    {"v": "v0", "status": "done", "finding": "Organizer baseline: both disputants get a strike, out at two.", "change": "Reproduced exactly (177/200, 1.38 false q/game, ledger 285) and froze it.", "classic": "87% · 1.37 · 289", "sneaky": "68% · 1.09 · 74"},
+    {"v": "v1", "status": "done", "finding": "60% of baseline false quarantines happen after the rogue is already out; bystanders pay the same as culprits.", "change": "One probability over five suspects, agreements clear, retrial before quarantine, direction of errors, stand-down after a catch.", "classic": "89% · 0.24 · 224", "sneaky": "59% · 0.41 · 81"},
+    {"v": "v1.1", "status": "done", "finding": "92% of damage comes from rounds where the rogue lied; catching it cannot undo the lie.", "change": "Repair: when a retrial gives a 2-of-3 majority, the ledger takes the majority.", "classic": "89% · 0.24 · 30", "sneaky": "59% · 0.41 · 21"},
+    {"v": "v1.2", "status": "done", "finding": "Our rogues might be too easy to beat if we tune on them.", "change": "Added two held-back rogues nobody tunes on: late big strikes and framer.", "classic": "late-big 43% · 0.47 · 25", "sneaky": "framer 58% · 0.35 · 17"},
+    {"v": "v2", "status": "testing", "finding": "Misses: 16 starter rogues lied 2+ times and escaped; sneaky damage sits in rounds 9-12; sneaky false quarantines all before the catch (framing).", "change": "Testing five fixes: error size, anti-framing second retrial, recency weighting, check before deciding, trust-weighted ledger.", "classic": "pending", "sneaky": "pending"}
+  ]
+}
