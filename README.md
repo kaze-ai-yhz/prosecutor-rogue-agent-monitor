@@ -2,7 +2,7 @@
 
 Built at the Claude Impact Lab: AI Trust & Safety (Antler SF, Tue Nov 17 2026). Track 2, challenges A (better monitor) + C (sneakier rogue).
 
-**Results:** see [RESULTS.md](RESULTS.md) (current: Prosecutor v2, 91% caught, 0.06 false quarantines/game vs baseline 87% and 1.37). **Run everything:** `./run.sh`. **Dashboard:** open `dashboard/index.html`. **Game explorer:** open `explorer/rogue-explorer.html`.
+**Results:** see [RESULTS.md](RESULTS.md) (current: Prosecutor v2, 91% caught, 0.06 false quarantines/game vs baseline 87% and 1.37). **Run everything:** `./run.sh`. **Walkthrough:** open `walkthrough/index.html` (see [SYSTEM.md](SYSTEM.md)). **Dashboard:** open `dashboard/index.html`. **Game explorer:** open `explorer/rogue-explorer.html`.
 
 Code layout: `prosecutor/` (monitor, paired evaluation harness, sneaky rogue, notes reader, dashboard data), `dashboard/` (static replay dashboard), `scaffold/` (bootstrap that fetches the organizer's original `sim.py` from the public starter).
 

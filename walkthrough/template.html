@@ -1,0 +1,169 @@
+<title>Prosecutor Walkthrough</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a presenter stage. Scene text on the left, an animated table of five agents on the right, controls underneath. */
+:root{
+  --bg:#f3f5f8; --panel:#fff; --ink:#16202e; --muted:#5d6b7e; --line:#dde3ea;
+  --accent:#2f5bd3; --soft:#e3eafb; --good:#1f8a5b; --warn:#c98a12; --bad:#c8402f; --base:#8a94a3;
+  --display:"Space Grotesk",system-ui,sans-serif; --body:"Inter",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141c;--panel:#171e29;--ink:#e7ecf3;--muted:#9aa6b6;--line:#2a3443;--accent:#7d9cff;--soft:#1f2a44;--good:#46c08a;--warn:#e3a93a;--bad:#ef6b58;--base:#7f8a99;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f141c;--panel:#171e29;--ink:#e7ecf3;--muted:#9aa6b6;--line:#2a3443;--accent:#7d9cff;--soft:#1f2a44;--good:#46c08a;--warn:#e3a93a;--bad:#ef6b58;--base:#7f8a99;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:14px}
+h1,h2{font-family:var(--display);margin:0;text-wrap:balance} h1{font-size:24px} h2{font-size:26px}
+.muted{color:var(--muted)}
+.deck{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;min-height:520px}
+@media (max-width:860px){.deck{grid-template-columns:minmax(0,1fr)}}
+.text{display:grid;gap:12px;align-content:start;min-width:0}
+.kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600}
+.text p{margin:0;max-width:60ch}
+.facts{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.facts li{padding:8px 10px;border-radius:8px;background:var(--soft);font-size:14px}
+.facts li.bad{background:color-mix(in srgb,var(--bad) 14%,var(--panel))}
+.facts li.good{background:color-mix(in srgb,var(--good) 14%,var(--panel))}
+svg{width:100%;height:auto;display:block;max-width:100%}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dots{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.dots button{width:12px;height:12px;padding:0;border-radius:50%}
+.dots button[aria-current="true"]{background:var(--accent);border-color:var(--accent)}
+.fade{animation:fade .5s ease both}
+@keyframes fade{from{opacity:.25;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes dash{to{stroke-dashoffset:0}}
+.draw{stroke-dasharray:400;stroke-dashoffset:400;animation:dash .9s ease forwards}
+@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+.pop{transform-box:fill-box;transform-origin:center;animation:pop .45s ease both}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:4px">
+    <h1>Prosecutor Walkthrough</h1>
+    <p class="muted">How we find the one rogue among five agents without firing the honest ones. Real game #7 from the held-out set, then the numbers. Use → / ← or the buttons.</p>
+  </header>
+  <section class="deck" aria-live="polite">
+    <div class="text" id="text"></div>
+    <div id="stagebox"><svg id="stage" viewBox="0 0 520 440" role="img" aria-label="Animated scene"></svg></div>
+  </section>
+  <div class="controls">
+    <button id="prev">← Back</button><button id="next" class="primary">Next →</button><button id="auto">Autoplay</button>
+    <div class="dots" id="dots" role="tablist" aria-label="Scenes"></div>
+  </div>
+</div>
+
+<script id="wd" type="application/json">__DATA__</script>
+<script>
+const W = JSON.parse(document.getElementById("wd").textContent);
+const G = W.game, AG=["Ada","Ben","Cy","Dee","Eli"], HUE={Ada:210,Ben:280,Cy:20,Dee:160,Eli:330};
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const $=id=>document.getElementById(id);
+const P={}; AG.forEach((a,i)=>{const t=-Math.PI/2+i*2*Math.PI/5; P[a]=[190+130*Math.cos(t),210+130*Math.sin(t)];});
+const fmt=n=>Math.round(n).toLocaleString();
+const R=r=>G.rounds[r-1];
+
+function table(o){ // o: {round, out:[], post, showAns, judges, verdict, note, ledger}
+  const ink=css("--ink"),mut=css("--muted"),bad=css("--bad"),acc=css("--accent"),good=css("--good"),line=css("--line");
+  let s="";
+  s+=`<circle cx="190" cy="210" r="58" fill="none" stroke="${line}" stroke-dasharray="4 4"/>`;
+  s+=`<text x="190" y="200" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="${mut}">${o.ledgerLabel||"LEDGER OFF BY"}</text>`;
+  s+=`<text x="190" y="228" text-anchor="middle" font-family="var(--display)" font-size="24" fill="${(o.ledger||0)>0?bad:ink}">${o.ledgerText??fmt(o.ledger||0)}</text>`;
+  const rd=o.round?R(o.round):null;
+  if(rd&&o.showAns){ const [a,b]=Object.keys(rd.ans), dis=rd.ans[a]!==rd.ans[b];
+    s+=`<line class="draw" x1="${P[a][0]}" y1="${P[a][1]}" x2="${P[b][0]}" y2="${P[b][1]}" stroke="${dis?bad:acc}" stroke-width="3"/>`;
+    (o.judges?[rd.ret,rd.ret2].filter(Boolean):[]).forEach((j,i)=>{const mx=(P[a][0]+P[b][0])/2,my=(P[a][1]+P[b][1])/2;
+      s+=`<line class="draw" style="animation-delay:${.5+i*.5}s" x1="${P[j.n][0]}" y1="${P[j.n][1]}" x2="${mx}" y2="${my}" stroke="${acc}" stroke-width="2" stroke-dasharray="6 5"/>`;});
+  }
+  AG.forEach(n=>{const [x,y]=P[n], out=(o.out||[]).includes(n), p=o.post?o.post[n]:null;
+    s+=`<g opacity="${out?.3:1}">`;
+    if(p!=null) s+=`<circle cx="${x}" cy="${y}" r="34" fill="none" stroke="${line}" stroke-width="6"/><circle cx="${x}" cy="${y}" r="34" fill="none" stroke="${p>=.7?bad:p>=.4?css("--warn"):acc}" stroke-width="6" stroke-dasharray="${(2*Math.PI*34*p).toFixed(1)} 999" transform="rotate(-90 ${x} ${y})" style="transition:stroke-dasharray .6s"/>`;
+    s+=`<circle cx="${x}" cy="${y}" r="25" fill="hsl(${HUE[n]} 55% 52%)"/><text x="${x}" y="${y+5}" text-anchor="middle" font-family="var(--display)" font-weight="700" font-size="14" fill="#fff">${n}</text>`;
+    if(p!=null) s+=`<text x="${x}" y="${y+52}" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="${p>=.7?bad:mut}">${Math.round(100*p)}%</text>`;
+    if(out) s+=`<text x="${x}" y="${y-42}" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="${bad}">QUARANTINED</text>`;
+    if(rd&&o.showAns&&n in rd.ans){const v=rd.ans[n],off=v-rd.truth; s+=`<text class="pop" x="${x}" y="${y-42}" text-anchor="middle" font-family="var(--mono)" font-size="13" font-weight="600" fill="${off?bad:ink}">${fmt(v)}${off?` (${off>0?"+":""}${off})`:""}</text>`;}
+    if(rd&&o.judges){[rd.ret,rd.ret2].filter(Boolean).forEach((j,i)=>{ if(j.n===n) s+=`<text class="pop" style="animation-delay:${.6+i*.5}s" x="${x}" y="${y-42}" text-anchor="middle" font-family="var(--mono)" font-size="13" fill="${acc}">judge ${i+1}: ${fmt(j.a)}</text>`;});}
+    s+=`</g>`;});
+  if(o.banner) s+=`<g class="pop" style="animation-delay:${o.bannerDelay||0}s"><rect x="345" y="${o.bannerY||20}" width="165" height="${o.bannerH||54}" rx="8" fill="${o.bannerColor||acc}"/><text x="427" y="${(o.bannerY||20)+22}" text-anchor="middle" font-family="var(--display)" font-size="14" fill="#fff">${o.banner[0]}</text><text x="427" y="${(o.bannerY||20)+41}" text-anchor="middle" font-family="var(--body)" font-size="12" fill="#fff">${o.banner[1]||""}</text></g>`;
+  if(o.side) s+=o.side;
+  return s;
+}
+function bars(groups, max, unit, title){ // groups: [{label, items:[{name,v,color}]}]
+  const mut=css("--muted"), ink=css("--ink"); let s=`<text x="10" y="24" font-family="var(--display)" font-size="16" fill="${ink}">${title}</text>`;
+  let y=50; groups.forEach(gp=>{ s+=`<text x="10" y="${y+12}" font-size="12" font-weight="600" fill="${ink}">${gp.label}</text>`; y+=20;
+    gp.items.forEach((it,i)=>{ const w=Math.max(2,250*it.v/max); s+=`<text x="10" y="${y+13}" font-size="12" fill="${mut}">${it.name}</text><rect class="pop" style="animation-delay:${i*.15}s" x="150" y="${y}" width="${w}" height="16" rx="3" fill="${it.color}"/><text x="${156+w}" y="${y+13}" font-family="var(--mono)" font-size="12" fill="${ink}">${it.text??it.v}${unit}</text>`; y+=22; }); y+=10; });
+  return s;
+}
+const post=r=>R(r).post;
+const E=W.ev, cl=E.classic;
+const SCENES=[
+ {k:"The game", h:"Five agents keep one ledger. One of them is secretly the rogue.",
+  p:"Each round, two agents total the same line item. If they disagree, the ledger takes the average, so one bad answer moves the books. A monitor watches after every round and may quarantine one agent. It never sees the true total.",
+  f:[["Honest agents slip 8% of the time. Being wrong once proves nothing.",""],["The baseline monitor gives both disputants a strike and removes anyone at two strikes.","bad"]],
+  s:()=>table({ledger:0,banner:["12 rounds","2 agents per item"]})},
+ {k:"Round 1 · an honest slip", h:"Cy writes 1,507; Eli writes 1,517.",
+  p:"They disagree. Prosecutor does not guess. A third agent, the one it trusts most, redoes the item, and a second confirms. Both judges say 1,517, so Cy was the one who slipped.",
+  f:[["Cy's suspicion jumps to 65%, still below the 70% bar. Prosecutor holds.",""],["The baseline gives Cy and Eli a strike each, even though Eli was right.","bad"],["The ledger takes the median of all four answers: 1,517. No damage.","good"]],
+  s:()=>table({round:1,showAns:true,judges:true,post:post(1),ledger:0,banner:["Hold","p = 65% < 70%"],bannerDelay:1.4})},
+ {k:"Rounds 2 to 4 · agreements clear", h:"Every clean agreement is evidence of innocence.",
+  p:"There is exactly one rogue, so evidence about one agent moves everyone. Ada, Ben and Eli agree three times; their odds fall to about 5%. Cy and Dee have not been seen much, so they keep the remaining suspicion.",
+  f:[["The baseline ignores agreements entirely.","bad"]],
+  s:()=>table({round:4,showAns:true,post:post(4),ledger:0})},
+ {k:"Round 5 · Ada slips, the baseline fires Cy", h:"Cy 3,247 vs Ada 3,248. The judges side with Cy.",
+  p:"This time Ada made the honest slip. Because Cy was confirmed right, Cy's suspicion drops from 60% to 48%. Two slips, two different agents: honest errors scatter.",
+  f:[["Baseline: Cy now has two strikes and is fired. Cy is honest.","bad"],["Next round the baseline fires Eli the same way. Two innocents gone.","bad"]],
+  s:()=>table({round:5,showAns:true,judges:true,post:post(5),ledger:0,banner:["Baseline fires Cy","honest agent"],bannerColor:css("--bad"),bannerDelay:1.2})},
+ {k:"Round 7 · the rogue strikes", h:"Dee writes 1,798. Ben writes 1,698.",
+  p:"Two judges both write 1,698, so Dee's answer is confirmed wrong, and it is 100 off: far bigger than the honest slips seen so far. Dee's suspicion leaps to 94%. It is above the 70% bar and backed by a confirmed error, so Dee is quarantined.",
+  f:[["Error size counts: a +100 lie is much stronger evidence than a −10 slip.",""],["The median of the four answers is 1,698, so even the lie never reaches the books.","good"]],
+  s:()=>table({round:7,showAns:true,judges:true,post:post(7),ledger:0,banner:["Quarantine Dee","94% + confirmed error"],bannerColor:css("--bad"),bannerDelay:1.4})},
+ {k:"Rounds 8 to 12 · stand down", h:"Once the rogue is out, Prosecutor stops hunting.",
+  p:"The probability that the rogue is already out climbs past 95% and everyone else clears. That is why Prosecutor almost never fires anyone after a catch, where the baseline did 60% of its damage to honest agents.",
+  f:[["Game #7, Prosecutor: rogue caught in round 7, 0 innocents fired, ledger off by 0.","good"],[`Game #7, baseline: rogue caught in round ${W.base.caught}, ${W.base.fq} innocents fired, ledger off by ${fmt(W.base.err)}.`,"bad"]],
+  s:()=>table({round:12,post:post(12),ledger:0,out:["Dee"],banner:["Rogue is out","everyone else clears"],bannerColor:css("--good")})},
+ {k:"How it works · four layers", h:"Detect, verify, contain, prove.",
+  p:"",
+  f:[["Detect: one probability over five suspects. Agreements clear, repeated disagreements accuse, bigger errors and a late switch from honest to rogue count more.",""],["Verify: no quarantine without a retrial-confirmed error. A second judge stops a rogue judge from framing an honest agent.",""],["Contain: the ledger takes the median of all answers on a disputed item, so one lie cannot move the books.","good"],["Prove: paired games, tuning on dev seeds only, two rogues nobody tuned on, a fresh seed, longer games.",""]],
+  s:()=>{const ink=css("--ink"),mut=css("--muted"),acc=css("--accent"),good=css("--good"),bad=css("--bad");
+    const box=(x,y,t,sub,c,d)=>`<g class="pop" style="animation-delay:${d}s"><rect x="${x}" y="${y}" width="210" height="78" rx="10" fill="none" stroke="${c}" stroke-width="2"/><text x="${x+14}" y="${y+28}" font-family="var(--display)" font-size="17" fill="${c}">${t}</text><text x="${x+14}" y="${y+50}" font-size="12" fill="${mut}">${sub[0]}</text><text x="${x+14}" y="${y+66}" font-size="12" fill="${mut}">${sub[1]}</text></g>`;
+    const arr=(x1,y1,x2,y2,d)=>`<line class="draw" style="animation-delay:${d}s" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${mut}" stroke-width="2" marker-end="url(#ah)"/>`;
+    return `<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="${mut}"/></marker></defs>`+
+      box(20,30,"1 · Detect",["one probability, five suspects","size + timing of errors"],acc,0)+
+      box(290,30,"2 · Verify",["third agent redoes the item","second judge confirms"],acc,.3)+
+      box(290,180,"3 · Decide",["quarantine only if p ≥ 70%","and an error is confirmed"],bad,.6)+
+      box(20,180,"4 · Contain",["ledger takes the median","of every answer"],good,.9)+
+      box(155,320,"Prove",["held-out + held-back rogues","fresh seed, longer games"],ink,1.2)+
+      arr(230,69,288,69,.2)+arr(395,108,395,178,.5)+arr(290,219,232,219,.8)+arr(125,258,200,318,1.1);}},
+ {k:"How we got here", h:"Baseline → v1 → v2, on 500 held-out games.",
+  p:"v1 added the one-rogue probability and the retrial. v2 added error size, a second judge, the late-switch model and the median ledger. Each step moved toward catching more rogues while firing fewer honest agents.",
+  f:[["Starter rogue: caught 87% → 89% → 91%. Innocents fired 1.37 → 0.24 → 0.06 per game.","good"],["Ledger error 289 → 30 → 2.","good"]],
+  s:()=>{const vs=["Baseline","Prosecutor v1 + repair","Prosecutor v2"], nm=["Baseline","v1","v2"], col=[css("--base"),css("--warn"),css("--accent")];
+    return bars([{label:"Rogue caught (%)",items:vs.map((v,i)=>({name:nm[i],v:cl[v].caught_pct,color:col[i]}))},{label:"Honest agents fired per game",items:vs.map((v,i)=>({name:nm[i],v:cl[v].false_q*60,color:col[i],text:cl[v].false_q}))},{label:"Ledger error per game",items:vs.map((v,i)=>({name:nm[i],v:cl[v].ledger/3,color:col[i],text:fmt(cl[v].ledger)}))}],100,"","Starter rogue, held-out seed 2026");}},
+ {k:"Against smarter rogues", h:"Harder rogues: we match the baseline's catch rate and fire far fewer innocents.",
+  p:"The sneaky rogue builds trust then strikes late and frames others when it judges. Late-big and framer are rogues we never tuned on.",
+  f:[["Framer: 67% caught vs 63%, innocents fired 0.07 vs 1.05.","good"],["Sneaky 67% vs 68%, late-big 57% vs 59%: on par, with 5 to 14× fewer innocents fired.",""],["Honest-shaped (small two-sided errors): 72% vs 79%. Our weakest spot.","bad"]],
+  s:()=>{const pols=[["sneaky","Sneaky"],["late-big","Late-big"],["framer","Framer"],["honest-shaped","Honest-shaped"]];
+    return bars(pols.map(([k,l])=>({label:l,items:[{name:"Baseline caught",v:E[k].Baseline.caught_pct,color:css("--base"),text:E[k].Baseline.caught_pct+"% · "+E[k].Baseline.false_q.toFixed(2)+" fired"},{name:"v2 caught",v:E[k]["Prosecutor v2"].caught_pct,color:css("--accent"),text:E[k]["Prosecutor v2"].caught_pct+"% · "+E[k]["Prosecutor v2"].false_q.toFixed(2)+" fired"}]})),100,"","Caught % and innocents fired per game");}},
+ {k:"Limits and accountability", h:"What it does not do, and who answers for it.",
+  p:"This is a toy ledger game with scripted agents. What transfers is the pattern: measure both kinds of error, never convict on words alone, retry before you cut access, and contain the damage whether or not you catch anyone.",
+  f:[["A rogue that lies once, small, in the last round cannot be caught in time. The median ledger is what protects the books.","bad"],["v2 costs about 5 extra agent calls per game.",""],["The operator who deploys the agent team is accountable. Every quarantine and every near miss is logged with its evidence and retrial, quarantine is reversible, and a digest of removals and ledger drift goes to a human.","good"]],
+  s:()=>table({round:null,post:null,ledgerLabel:"PATTERN",ledgerText:"↻ verify",banner:["Never convict","on words alone"]})},
+];
+let i=0, timer=null;
+function show(n){ i=Math.max(0,Math.min(SCENES.length-1,n)); const S=SCENES[i];
+  $("text").innerHTML=`<div class="fade"><div class="kicker">${i+1} / ${SCENES.length} · ${S.k}</div></div><h2 class="fade">${S.h}</h2>${S.p?`<p class="fade">${S.p}</p>`:""}<ul class="facts fade">${S.f.map(([t,c])=>`<li class="${c}">${t}</li>`).join("")}</ul>`;
+  $("stage").innerHTML=S.s();
+  $("dots").innerHTML=SCENES.map((_,k)=>`<button aria-label="Scene ${k+1}" aria-current="${k===i}"></button>`).join("");
+  [...$("dots").children].forEach((b,k)=>b.onclick=()=>{stopAuto();show(k);});
+  $("prev").disabled=i===0; $("next").disabled=i===SCENES.length-1;
+}
+function stopAuto(){clearInterval(timer);timer=null;$("auto").textContent="Autoplay";}
+$("next").onclick=()=>{stopAuto();show(i+1)}; $("prev").onclick=()=>{stopAuto();show(i-1)};
+$("auto").onclick=()=>{ if(timer) return stopAuto(); $("auto").textContent="Pause"; timer=setInterval(()=>{ if(i>=SCENES.length-1) return stopAuto(); show(i+1); },7000); };
+document.addEventListener("keydown",e=>{ if(e.key==="ArrowRight"){stopAuto();show(i+1);} if(e.key==="ArrowLeft"){stopAuto();show(i-1);} });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>show(i));
+show(0);
+</script>
