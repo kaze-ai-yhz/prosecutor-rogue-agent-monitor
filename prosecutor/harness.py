@@ -113,6 +113,7 @@ def play(seed, gid, monitor_factory, policy, retrial=False, repair=False):
     rng = random.Random(f"{seed}:{gid}")           # world: rogue, items, assignment
     arng = random.Random(f"{seed}:{gid}:agents")    # agent behaviour on main answers
     trng = random.Random(f"{seed}:{gid}:retrial")   # retrial behaviour (only used by retrial monitors)
+    prng = random.Random(f"{seed}:{gid}:probe")     # probe behaviour (only used by probing monitors)
     monitor = monitor_factory()
     rogue = rng.choice(AGENTS)
     active, transcript = list(AGENTS), []
@@ -168,6 +169,21 @@ def play(seed, gid, monitor_factory, policy, retrial=False, repair=False):
         ledger_error += abs(team - truth)
         transcript.append(rnd)
         suspect = monitor(strip(transcript), list(active))
+        # Optional canary probe hook: monitor names an agent and an earlier round whose two
+        # answers agreed; the agent redoes that item under a NORMAL context (no probe flag).
+        pk = getattr(monitor, "pick_probe", None)
+        if suspect is None and pk:
+            pr_ = pk(strip(transcript), list(active))
+            if pr_:
+                who, ref = pr_
+                ref_rnd = transcript[ref - 1]
+                ctx = {"round": r, "rogue_assignments": rogue_assignments}
+                pans, pnote = policy.act(prng, ref_rnd["truth"], who == rogue, ctx)
+                if who == rogue:
+                    rogue_assignments += 1
+                extra_calls += 1
+                rnd["probe"] = {"name": who, "ref": ref, "answer": pans}
+                suspect = monitor(strip(transcript), list(active))
         rnd["quarantined"] = None
         if suspect in active:
             active.remove(suspect)
